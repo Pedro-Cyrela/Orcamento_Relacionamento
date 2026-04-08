@@ -85,7 +85,10 @@ class ForecastReader:
     @staticmethod
     def _parse_matrix_layout(df: pd.DataFrame, header_row_idx: int) -> pd.DataFrame:
         header_values = [normalize_text(value) for value in df.iloc[header_row_idx].tolist()]
-        desc_col = ForecastReader._find_best_column(header_values, ["previsao de despesas", "historico da despesa", "descrição", "descricao"])
+        desc_col = ForecastReader._find_best_column(
+            header_values,
+            ["previsao de despesas", "historico da despesa", "descrição", "descricao"],
+        )
         code_col = ForecastReader._find_best_column(header_values, ["item", "codigo", "código"])
         if code_col is None and ForecastReader._column_looks_like_codes(df, 0, start_row=header_row_idx + 1):
             code_col = 0
@@ -100,10 +103,9 @@ class ForecastReader:
             row = df.iloc[idx]
             description = str(row.iloc[desc_col]).strip()
             code = str(row.iloc[code_col]).strip() if code_col is not None else ""
-            v90_raw = row.iloc[col_90]
-            vcota_raw = row.iloc[col_cota]
-            v90 = safe_to_float(v90_raw)
-            vcota = safe_to_float(vcota_raw)
+            v90 = safe_to_float(row.iloc[col_90])
+            vcota = safe_to_float(row.iloc[col_cota])
+
             if not description:
                 continue
             if ForecastReader._is_terminal_row(description):
@@ -114,6 +116,7 @@ class ForecastReader:
                 continue
             if v90 == 0 and vcota == 0 and not ForecastReader._looks_like_detail_row(description):
                 continue
+
             rows.append(
                 {
                     "codigo_item": code,
@@ -144,6 +147,7 @@ class ForecastReader:
                 continue
             if value == 0 and not ForecastReader._looks_like_detail_row(description):
                 continue
+
             rows.append(
                 {
                     "codigo_item": "",
@@ -201,24 +205,25 @@ class ForecastReader:
         ]
         return any(token in text for token in terminal_tokens)
 
-
     @staticmethod
     def _is_group_total_row(df: pd.DataFrame, row_idx: int, code: str, description: str) -> bool:
         code_text = str(code).strip()
         if not re.fullmatch(r"\d+\.\d+", code_text):
             return False
+
         norm_desc = normalize_text(description)
-        # Grupo consolidado com filhos logo abaixo, ex.: 1.2 seguido de 1.2.1
         for next_idx in range(row_idx + 1, min(len(df), row_idx + 6)):
             next_code = str(df.iat[next_idx, 0]).strip() if df.shape[1] > 0 else ""
             if next_code.startswith(code_text + "."):
                 return True
+
         return norm_desc.isupper() or norm_desc in {"contratos", "administrativas", "tarifas e taxas", "pessoal"}
 
     @staticmethod
     def _is_section_row(code: str, description: str, v90: float, vcota: float) -> bool:
         code_text = normalize_text(code)
         desc_text = normalize_text(description)
+
         if desc_text.startswith("total"):
             return True
         if re.fullmatch(r"\d+(\.\d+)?", code_text) and v90 == 0 and vcota == 0:

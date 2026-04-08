@@ -8,9 +8,9 @@ import pandas as pd
 from services.models import LibraryData
 from utils.constants import (
     DEFAULT_UNCLASSIFIED_LABEL,
-    DEFAULT_UNCLASSIFIED_SUBTYPE,
     EXPECTED_LIBRARY_COLUMNS,
     GENERAL_ADMIN_ALIASES,
+    OPTIONAL_LIBRARY_COLUMNS,
     REQUIRED_LIBRARY_SHEETS,
 )
 from utils.helpers import AppError, bool_from_any, normalize_column_name, normalize_text, uploaded_file_to_bytes
@@ -38,11 +38,21 @@ class LibraryService:
         tipos_sheet = normalized_sheet_map["tipos_padrao"]
         mapa_sheet = normalized_sheet_map["biblioteca_map"]
 
+        warnings: list[str] = []
+
         tipos = LibraryService._prepare_sheet(
-            workbook[tipos_sheet], EXPECTED_LIBRARY_COLUMNS["Tipos_Padrao"], sheet_name=tipos_sheet
+            workbook[tipos_sheet],
+            EXPECTED_LIBRARY_COLUMNS["Tipos_Padrao"],
+            OPTIONAL_LIBRARY_COLUMNS.get("Tipos_Padrao", []),
+            sheet_name=tipos_sheet,
+            warnings=warnings,
         )
         mapa = LibraryService._prepare_sheet(
-            workbook[mapa_sheet], EXPECTED_LIBRARY_COLUMNS["Biblioteca_Map"], sheet_name=mapa_sheet
+            workbook[mapa_sheet],
+            EXPECTED_LIBRARY_COLUMNS["Biblioteca_Map"],
+            OPTIONAL_LIBRARY_COLUMNS.get("Biblioteca_Map", []),
+            sheet_name=mapa_sheet,
+            warnings=warnings,
         )
 
         tipos = tipos[tipos["ativo"].apply(bool_from_any)]
@@ -54,6 +64,7 @@ class LibraryService:
         tipos["subtipo_gasto"] = tipos["subtipo_gasto"].fillna("")
         mapa["tipo_gasto_padrao"] = mapa["tipo_gasto_padrao"].fillna(DEFAULT_UNCLASSIFIED_LABEL)
         mapa["subtipo_gasto"] = mapa["subtipo_gasto"].fillna("")
+        mapa["regra_observacao"] = mapa["regra_observacao"].fillna("")
         mapa["administradora"] = mapa["administradora"].fillna("")
         mapa["descricao_original"] = mapa["descricao_original"].fillna("")
 
@@ -66,7 +77,6 @@ class LibraryService:
 
         tipos_ids = set(tipos["norm_id_tipo_gasto"])
         orphan_rows = mapa.loc[~mapa["id_tipo_gasto"].apply(normalize_text).isin(tipos_ids)]
-        warnings: list[str] = []
         if not orphan_rows.empty:
             warnings.append(
                 "Algumas linhas da aba Biblioteca_Map possuem id_tipo_gasto inexistente em Tipos_Padrao e foram mantidas para não bloquear a operação."
@@ -75,15 +85,32 @@ class LibraryService:
         return LibraryData(tipos_padrao=tipos, mapa=mapa, warnings=warnings)
 
     @staticmethod
-    def _prepare_sheet(df: pd.DataFrame, required_columns: Iterable[str], sheet_name: str) -> pd.DataFrame:
+    def _prepare_sheet(
+        df: pd.DataFrame,
+        required_columns: Iterable[str],
+        optional_columns: Iterable[str],
+        sheet_name: str,
+        warnings: list[str],
+    ) -> pd.DataFrame:
         prepared = df.copy()
         prepared.columns = [normalize_column_name(column) for column in prepared.columns]
 
-        missing = [column for column in required_columns if column not in prepared.columns]
-        if missing:
+        missing_required = [column for column in required_columns if column not in prepared.columns]
+        if missing_required:
             raise AppError(
-                f"A aba '{sheet_name}' não possui todas as colunas mínimas obrigatórias. Faltando: {', '.join(missing)}."
+                f"A aba '{sheet_name}' não possui todas as colunas mínimas obrigatórias. Faltando: {', '.join(missing_required)}."
             )
+
+        missing_optional = [column for column in optional_columns if column not in prepared.columns]
+        for column in missing_optional:
+            prepared[column] = ""
+        if missing_optional:
+            warnings.append(
+                f"A aba '{sheet_name}' não trouxe as colunas opcionais {', '.join(missing_optional)}. Valores padrão foram aplicados automaticamente."
+            )
+
+        if "ativo" not in prepared.columns:
+            prepared["ativo"] = True
 
         prepared = prepared[[column for column in prepared.columns if column]]
         prepared = prepared.dropna(how="all")

@@ -129,7 +129,7 @@ def main() -> None:
                 st.session_state.library_status_label = "Erro de validação"
                 st.session_state.library_status_class = "status-error"
                 st.error(str(exc))
-            except Exception as exc:  # pragma: no cover
+            except Exception as exc:
                 st.session_state.library_status_label = "Erro inesperado"
                 st.session_state.library_status_class = "status-error"
                 st.error(f"Ocorreu um erro inesperado ao processar os arquivos: {exc}")

@@ -11,7 +11,7 @@ import pandas as pd
 
 
 class AppError(Exception):
-    """Erro de negócio com mensagem amigável para a interface."""
+    pass
 
 
 @dataclass
@@ -85,16 +85,9 @@ def parse_filename_metadata(filename: str) -> ParseResult:
             administradora="Não identificado",
             empreendimento=base,
             valido=False,
-            mensagem=(
-                "Nome fora do padrão esperado 'Administradora - Empreendimento.xlsx'. "
-                "Os dados foram carregados, mas revise o arquivo para melhor identificação."
-            ),
+            mensagem="Nome fora do padrão esperado 'Administradora - Empreendimento.xlsx'. Os dados foram carregados, mas revise o arquivo para melhor identificação.",
         )
-    return ParseResult(
-        administradora=parts[0].strip(),
-        empreendimento=parts[1].strip(),
-        valido=True,
-    )
+    return ParseResult(administradora=parts[0].strip(), empreendimento=parts[1].strip(), valido=True)
 
 
 def ensure_excel_file(filename: str) -> None:

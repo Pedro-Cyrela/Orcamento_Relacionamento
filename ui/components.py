@@ -130,24 +130,12 @@ class UIComponents:
         data = pd.concat(frames, ignore_index=True)
         data["valor_90_dias"] = data["valor_90_dias"].apply(format_currency)
         data["valor_cota_plena"] = data["valor_cota_plena"].apply(format_currency)
-        data.columns = [
-            "Previsão",
-            "Descrição original",
-            "Administradora",
-            "Empreendimento",
-            "90 dias",
-            "Cota plena",
-        ]
+        data.columns = ["Previsão", "Descrição original", "Administradora", "Empreendimento", "90 dias", "Cota plena"]
         with st.expander("Itens não classificados", expanded=False):
             st.dataframe(data, use_container_width=True, hide_index=True)
 
     @staticmethod
-    def _render_grouped_details(
-        details_df: pd.DataFrame,
-        title: str,
-        difference_mode: bool,
-        expander_prefix: str,
-    ) -> None:
+    def _render_grouped_details(details_df: pd.DataFrame, title: str, difference_mode: bool, expander_prefix: str) -> None:
         if details_df.empty:
             return
         st.markdown(f"#### {title}")
@@ -176,13 +164,7 @@ class UIComponents:
                         "dif_cota_plena": "Dif. cota plena",
                     }
                 else:
-                    cols = [
-                        "descricao_original",
-                        "administradora",
-                        "empreendimento",
-                        "valor_90_dias",
-                        "valor_cota_plena",
-                    ]
+                    cols = ["descricao_original", "administradora", "empreendimento", "valor_90_dias", "valor_cota_plena"]
                     display = display[cols]
                     rename_map = {
                         "descricao_original": "Descrição original",

@@ -18,15 +18,11 @@ class ExportService:
             comparison.summary.to_excel(writer, sheet_name=EXPORT_SHEET_NAMES["summary"], index=False)
 
             for index, forecast in enumerate(forecasts, start=1):
-                sheet_name = f"Previsao_{index}"
-                forecast.consolidated_data.to_excel(writer, sheet_name=sheet_name, index=False)
+                forecast.consolidated_data.to_excel(writer, sheet_name=f"Previsao_{index}", index=False)
 
             comparison.detail.to_excel(writer, sheet_name=EXPORT_SHEET_NAMES["detail"], index=False)
 
-            all_unclassified = pd.concat(
-                [forecast.unclassified_data.assign(previsao=forecast.label) for forecast in forecasts],
-                ignore_index=True,
-            )
+            all_unclassified = pd.concat([forecast.unclassified_data.assign(previsao=forecast.label) for forecast in forecasts], ignore_index=True)
             if not all_unclassified.empty:
                 all_unclassified.to_excel(writer, sheet_name=EXPORT_SHEET_NAMES["unclassified"], index=False)
 
@@ -48,6 +44,7 @@ class ExportService:
                 cell.font = header_font
                 cell.alignment = Alignment(horizontal="center", vertical="center")
                 cell.border = border
+
             for col_idx, column_cells in enumerate(ws.columns, start=1):
                 max_length = 0
                 for cell in column_cells:
@@ -55,5 +52,4 @@ class ExportService:
                     max_length = max(max_length, len(value))
                     if col_idx > 1:
                         cell.alignment = Alignment(vertical="top")
-                width = min(max(max_length + 2, 14), 42)
-                ws.column_dimensions[get_column_letter(col_idx)].width = width
+                ws.column_dimensions[get_column_letter(col_idx)].width = min(max(max_length + 2, 14), 42)

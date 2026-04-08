@@ -43,9 +43,7 @@ class StandardizerService:
         unclassified = standardized_df.loc[~standardized_df["classificado"]].copy()
         warnings = list(raw_forecast.get("warnings", []))
         if not unclassified.empty:
-            warnings.append(
-                f"{len(unclassified)} item(ns) ficaram sem classificação na previsão {label}."
-            )
+            warnings.append(f"{len(unclassified)} item(ns) ficaram sem classificação na previsão {label}.")
 
         return ForecastData(
             forecast_id=forecast_id,
@@ -67,17 +65,11 @@ class StandardizerService:
         desc_key = row["norm_descricao_original"]
         admin_key = row["norm_administradora"]
 
-        specific = mapa[
-            (mapa["norm_descricao_original"] == desc_key)
-            & (mapa["norm_administradora"] == admin_key)
-        ]
+        specific = mapa[(mapa["norm_descricao_original"] == desc_key) & (mapa["norm_administradora"] == admin_key)]
         if not specific.empty:
             return specific.iloc[0][["id_tipo_gasto", "tipo_gasto_padrao", "subtipo_gasto", "regra_observacao"]]
 
-        general = mapa[
-            (mapa["norm_descricao_original"] == desc_key)
-            & (mapa["is_regra_geral"])
-        ]
+        general = mapa[(mapa["norm_descricao_original"] == desc_key) & (mapa["is_regra_geral"])]
         if not general.empty:
             return general.iloc[0][["id_tipo_gasto", "tipo_gasto_padrao", "subtipo_gasto", "regra_observacao"]]
 
